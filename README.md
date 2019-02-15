@@ -1,0 +1,1 @@
+# GBF GW scraper
