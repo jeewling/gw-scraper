@@ -104,12 +104,24 @@ def main():
 
     if args.interlude is not None:
         # At the end of interlude, scrape only player.
+        def countdown():
+            scrape_time = datetime(2019, 2, 17, 3, 40 ,0)
+            remain = scrape_time - datetime.now()
+            for i in range(int(remain.total_seconds()), 0, -1):
+                sleep(1)
+                total_seconds = int(remain.total_seconds())
+                hours, remainder = divmod(total_seconds, 60*60)
+                minutes, seconds = divmod(remainder, 60)
+                print(f'Countdown: {hours} hours {minutes} minutes {seconds} seconds\r', end='')
+                remain = scrape_time - datetime.now()
+
         start_page, end_page = args.interlude
         info.suffix = '_interlude'
         save_dir = ROOT_DIR / 'data' / args.gw / 'total' / 'indiv'
-        
+
         GBF = browser.open_chrome()
         login(GBF)
+        countdown()
         print(f'*************** Scraping individual ranking ***************')
         df = scrape(start_page,
                     end_page,
@@ -121,7 +133,7 @@ def main():
         fname = f'{args.gw}_indiv_interlude.tsv'
         fpath = save_dir / fname
         df.to_csv(fpath, sep='\t', index=False)
-        print(f'*************** Saved at {save_dir} ***************')
+        print(f'*************** Saved at {fpath} ***************')
 
     if args.speed is not None:
         def cal_date():

@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 
-def search_crew(query, gw_num, by='name'):
+def search_crew(query, gw_num):
     if gw_num < 41: raise Exception('Only available for GW 41 and onward')
     ROOT = Path()
     DATA_DIR = ROOT / 'data' / str(gw_num) / 'total' / 'crew'
@@ -14,8 +14,8 @@ def search_crew(query, gw_num, by='name'):
         if '_crew_' not in file_path.name: continue
         files.append(file_path)
         df = pd.read_csv(file_path, sep='\t')
-        if by == 'id': wanted_row = df[df['crew_id'] == query]
-        if by == 'name': wanted_row = df[df.iloc[:, 2] == query]
+        if isinstance(query, int): wanted_row = df[df['crew_id'] == query]
+        if isinstance(query, str): wanted_row = df[df.iloc[:, 2] == query]
         if len(wanted_row) == 0: return 'Not Found'
         points.append(wanted_row.iloc[:, 3].values[0])
     
@@ -104,7 +104,7 @@ def search_crew(query, gw_num, by='name'):
             print(f"Day 4:")
         print(f"Total:\t{obj['total']:,} points")
 
-def search_indiv(query, gw_num, by='id'):
+def search_indiv(query, gw_num):
     ROOT = Path()
     DATA_DIR = ROOT / 'data' / str(gw_num) / 'total' / 'indiv'
     if not DATA_DIR.exists(): raise Exception('Incorrect GW number')
@@ -115,20 +115,18 @@ def search_indiv(query, gw_num, by='id'):
         files.append(file_path)
     # Switch interlude and prelim order
     if len(files) > 1: files[0], files[1] = files[1], files[0]
-    
     points = []
     battles = []
     for file in files:
         df = pd.read_csv(file, sep='\t')
-        if by == 'name': wanted_row = df[df.iloc[:, 3] == query]
-        if by == 'id': wanted_row = df[df.iloc[:, 2] == query]
+        if isinstance(query, int): wanted_row = df[df.iloc[:, 2] == query]
+        if isinstance(query, str): wanted_row = df[df.iloc[:, 3] == query]
         try:
             points.append(wanted_row.iloc[:, 5].values[0])
             battles.append(wanted_row.iloc[:, 4].values[0])
         except:
             points.append(0)
             battles.append(0)
-    
     id_ = wanted_row.iloc[:, 2].values[0]
     name = wanted_row.iloc[:, 3].values[0]
     ranking = wanted_row.iloc[:, 0].values[0]
@@ -200,62 +198,27 @@ def search_indiv(query, gw_num, by='id'):
         print(f'Total:\t{points[-1]:,}\tpoints')
         print(f'Total battles:\t{battles[-1]:,}')
 
-        
-
-def show_cumu(query, gw_num, day, search_by='name'):
-    ROOT = os.getcwd()
-    DATA_DIR = os.path.join(ROOT, 'data', str(gw_num), 'speed', 'day{}'.format(day))
-    files = [file for file in os.listdir(DATA_DIR) if not file.startswith('.')]
+def show_speed(query, gw_num, day, by='name'):
+    ROOT = Path()
+    DATA_DIR = ROOT / 'data' / str(gw_num) / 'speed' / f'day{day}'
+    files = [file for file in DATA_DIR.iterdir() if '_top' in file.name]
     points = []
     times = []
-    for i, file_ in enumerate(sorted(files)):
-        # Per hour
+    for i, file in enumerate(sorted(files)):
         if i % 3 != 0:
             continue
-        fpath = os.path.join(DATA_DIR, file_)
-        df = pd.read_csv(fpath, sep='\t')
-        if search_by == 'name':
-            wanted_row = df[df.iloc[:, 2] == query]
-        if search_by == 'id':
-            wanted_row = df[df['crew_id'] == query]
+        df = pd.read_csv(file, sep='\t')
+        if isinstance(query, str): wanted_row = df[df.iloc[:, 2] == query]
+        if isinstance(query, int): wanted_row = df[df['crew_id'] == query]
         points.append(wanted_row.iloc[:, 3].values[0])
-        times.append(file_[16:-4].replace('-', ':'))
-    name = wanted_row.name.values[0]
-    id_ = wanted_row.crew_id.values[0]
-    points = [point - points[0] for point in points]
-
-    print('Crew ID:\t{}'.format(id_))
-    print('Name:\t{}'.format(name))
-    print('GW:\t{}'.format(gw_num), 'Day:\t{}'.format(day), sep='\t')
-    print('Accumulate points:')
-    for i in range(0, len(points)):
-        print(times[i], '{:,}'.format(points[i]), sep='\t')
-
-def show_gain(query, gw_num, day, search_by='name'):
-    ROOT = os.getcwd()
-    DATA_DIR = os.path.join(ROOT, 'data', str(gw_num), 'speed', 'day{}'.format(day))
-    files = [file for file in os.listdir(DATA_DIR) if not file.startswith('.')]
-    points = []
-    times = []
-    for i, file_ in enumerate(sorted(files)):
-        if i % 3 != 0:
-            continue
-        fpath = os.path.join(DATA_DIR, file_)
-        df = pd.read_csv(fpath, sep='\t')
-        if search_by == 'name':
-            wanted_row = df[df.iloc[:, 2] == query]
-        if search_by == 'id':
-            wanted_row = df[df['crew_id'] == query]
-        points.append(wanted_row.iloc[:, 3].values[0])
-        times.append(file_[16:-4].replace('-', ':'))
+        times.append(file.name[16:-4].replace('-', ':'))
     name = wanted_row.name.values[0]
     id_ = wanted_row.crew_id.values[0]
     points = [point - points[0] for point in points]
     gains = [points[i] - points[i - 1] for i in range(1, len(points))]
-    print('Crew ID:\t{}'.format(id_))
-    print('Name:\t{}'.format(name))
-    print('GW:\t{}'.format(gw_num), 'Day:\t{}'.format(day), sep='\t')
-    print('Points gained:')
-    for i in range(0, len(gains)):
-        print('{} - {}'.format(times[i],times[i+1]), '{:,}'.format(gains[i]), sep='\t')
-    print('Total:\t{:,}\tpoints'.format(sum(gains)))
+    print(f'Crew ID:\t{id_}')
+    print(f'Name:\t{name}')
+    print(f'GW:\t{gw_num}\tDay:\t{day}')
+    print(f'Time (JST)\t\tAccumulate points\tPoints gained')
+    for i in range(0, len(gains)): print(f'{times[i]} - {times[i+1]}\t\t{points[1:][i]:,}\t\t+{gains[i]:,}')
+    print(f'Total:\t{sum(gains):,}\tpoints')    
