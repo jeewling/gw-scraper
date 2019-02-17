@@ -107,12 +107,13 @@ def main():
         def countdown():
             scrape_time = datetime(2019, 2, 17, 3, 40 ,0)
             remain = scrape_time - datetime.now()
-            for i in range(int(remain.total_seconds()), 0, -1):
+            for i in range(int(remain.total_seconds()), -1, -1):
                 sleep(1)
                 total_seconds = int(remain.total_seconds())
                 hours, remainder = divmod(total_seconds, 60*60)
                 minutes, seconds = divmod(remainder, 60)
-                print(f'Countdown: {hours} hours {minutes} minutes {seconds} seconds\r', end='')
+                print(' ' * 50, end='\r')
+                print(f'Countdown: {hours}h {minutes}m {seconds}s', end='\r')
                 remain = scrape_time - datetime.now()
 
         start_page, end_page = args.interlude
@@ -157,7 +158,7 @@ def main():
         for _ in range(timestep):
             date, hour, first_dig_minute = cal_date()
             t0 = time()
-            print(f'*************** Scraping top {topk} crew points @{hour}:{first_dig_minute}0 JST  ***************')
+            print(f'*************** Scraping top {topk} crew points @{(datetime.now() + timedelta(hours=2)).strftime("%H:%M:%S")} JST  ***************')
             df = scrape(1,
                         topk // 10,
                         info.base_crew_rankings_url,
@@ -168,10 +169,16 @@ def main():
             fpath = save_dir / fname
             df.to_csv(fpath, sep='\t', index=False)
             print(f'*************** Saved at {fpath} ***************')
-            next_iter = (date + timedelta(minutes=20)).strftime("%H.%M")
-            print(f'*************** Next iteration: {next_iter} JST ***************')
             t1 = time()
-            sleep(interval * 60 - (t1 - t0))
+
+            for sec in range(int(interval * 60 - (t1 - t0)), -1 ,-1):
+                t2 = time()
+                d = datetime(1, 1, 1) + timedelta(seconds=sec)
+                print(' ' * 50, end='\r')
+                print(f'*************** Countdown: {d.minute}m {d.second}s ***************', end='\r') 
+                t3 = time()
+                sleep(1 - (t3 - t2))
+            print(f'*************** Overhead: {(t3 - t1) - (interval * 60 - (t1 - t0))}s ***************')
         GBF.close()
 
     if args.crew is not None:
